@@ -1,0 +1,96 @@
+# OpenKuasaOS / KerjaAI — local production-like stack (app + PostgreSQL + optional Ollama)
+#
+# Usage:
+#   cp .env.example .env            # then set APP_KEY + DB_PASSWORD
+#   php artisan key:generate        # fills APP_KEY in .env (or use --show and export it)
+#   docker compose up -d --build
+#   docker compose exec app php artisan migrate:fresh --seed
+#   open http://localhost:8000
+#
+# The compose file reads APP_KEY / DB_* from your shell or .env file.
+# Sensible self-host defaults are provided below so `docker compose up` works
+# even without a .env file (except APP_KEY, which Laravel requires).
+
+name: openkuasa
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openkuasa-os:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8000}:80"
+    environment:
+      APP_NAME: "${APP_NAME:-KerjaAI}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_URL: "${APP_URL:-http://localhost:8000}"
+      APP_KEY: "${APP_KEY:?Set APP_KEY — run 'php artisan key:generate --show' locally and export it}"
+      APP_LOCALE: "${APP_LOCALE:-ms}"
+      APP_FALLBACK_LOCALE: "${APP_FALLBACK_LOCALE:-ms}"
+
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: "${DB_DATABASE:-openkuasa}"
+      DB_USERNAME: "${DB_USERNAME:-postgres}"
+      DB_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in your .env or shell}"
+
+      SESSION_DRIVER: "${SESSION_DRIVER:-database}"
+      CACHE_STORE: "${CACHE_STORE:-database}"
+      QUEUE_CONNECTION: "${QUEUE_CONNECTION:-database}"
+
+      AI_DEFAULT_PROVIDER: "${AI_DEFAULT_PROVIDER:-ollama}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-latest-flash}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-gemma4:e2b}"
+
+      RUN_MIGRATIONS: "${RUN_MIGRATIONS:-true}"
+      RUN_STORAGE_LINK: "${RUN_STORAGE_LINK:-true}"
+    volumes:
+      - storage_data:/var/www/html/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/up || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${DB_DATABASE:-openkuasa}"
+      POSTGRES_USER: "${DB_USERNAME:-postgres}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in your .env or shell}"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-openkuasa}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional local AI engine for Tuah (offline mode).
+  # Start with: docker compose --profile ai up -d
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    profiles: ["ai"]
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  pgdata:
+  storage_data:
+  ollama_data:

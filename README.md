@@ -120,6 +120,64 @@ Buka pelayar web anda di: `http://localhost:8000`.
 
 ---
 
+## 🐳 Panduan Docker (Disyorkan untuk Self-Host)
+
+Imej Docker rasmi dibina automatik oleh GitHub Actions (`.github/workflows/docker.yml`) dan diterbitkan ke GitHub Container Registry (GHCR) pada setiap push ke `main` dan tag `v*.*.*`.
+
+### A. Jalankan dengan Docker Compose (app + PostgreSQL)
+
+```bash
+cp .env.example .env
+php artisan key:generate          # isi APP_KEY dalam .env
+# tetapkan DB_PASSWORD dalam .env / shell, contoh:
+export APP_KEY='base64:...'      # atau biarkan dibaca dari .env
+export DB_PASSWORD='kata_laluan_anda'
+
+docker compose up -d --build
+docker compose exec app php artisan migrate:fresh --seed
+```
+
+Buka `http://localhost:8000` (ubah dengan `APP_PORT=8080 docker compose up -d`).
+
+**Maklumat Log Masuk Demo:** sama seperti di atas (`admin@openkuasa.my` / `password`).
+
+Penjelasan tingkah laku container:
+- `docker/entrypoint.sh` menunggu Postgres (`pg_isready`), kemudian menjalankan `php artisan migrate --force` dan `php artisan optimize`. Lumpuhkan dengan `RUN_MIGRATIONS=false`.
+- Kesihatan app: `GET /up` (healthcheck compose + Apache vhost `docker/apache/000-default.conf`).
+- Data kekal dalam volumes `pgdata` (Postgres) dan `storage_data` (`storage/` Laravel).
+
+### B. Guna imej GHCR yang telah dibina (tanpa build tempatan)
+
+```bash
+docker pull ghcr.io/9m2pju/openkuasaos:latest
+docker tag ghcr.io/9m2pju/openkuasaos:latest openkuasa-os:latest
+docker compose up -d
+```
+
+Gantikan `9m2pju/openkuasaos` dengan `owner/repo` fork anda jika berkenaan (huruf kecil).
+
+### C. AI luar talian (pilihan, profil `ai`)
+
+```bash
+docker compose --profile ai up -d
+# kemudian dalam .env / environment: OLLAMA_BASE_URL=http://ollama:11434
+docker compose exec ollama ollama pull gemma4:e2b
+```
+
+### Pemboleh ubah persekitaran utama
+
+| Pemboleh ubah | Lalai (compose) | Catatan |
+| --- | --- | --- |
+| `APP_KEY` | **wajib** | `php artisan key:generate --show` |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` | `openkuasa` / `postgres` / **wajib** | dikongsi container `app` + `db` |
+| `APP_PORT` / `DB_PORT` | `8000` / `5432` | port hos |
+| `RUN_MIGRATIONS` / `RUN_STORAGE_LINK` | `true` | set `false` untuk skip |
+| `OLLAMA_BASE_URL` | `http://ollama:11434` | `http://localhost:11434` jika Ollama di hos |
+
+Fail berkaitan: `Dockerfile` (multi-stage Node 20 → PHP 8.4-Apache), `docker-compose.yml`, `docker/entrypoint.sh`, `docker/apache/000-default.conf`, `docker/php/production.ini`, `.dockerignore`.
+
+---
+
 ## 🧪 Ujian Automasi & Jaminan Kualiti (Test Suite)
 
 Sistem ini disokong oleh ujian unit & integrasi PHPUnit yang menyeluruh untuk memastikan ketepatan statutori dan kestabilan sistem:
