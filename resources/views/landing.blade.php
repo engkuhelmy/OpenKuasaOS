@@ -493,9 +493,10 @@
                     <div class="flex items-center gap-2.5">
                         <span class="live-dot"></span>
                         <span class="font-extrabold text-white tracking-wide uppercase text-[11px] flex items-center gap-1.5">
-                            <span>🏢</span> KerjaAI Live Pixel HQ &bull; Simulasi Pejabat Beroperasi
+                            <span>🏢</span> KerjaAI Live Pixel HQ &bull; @if (config('services.office_hub.embed_url'))Pejabat AI Masa Nyata @else Simulasi Pejabat Beroperasi @endif
                         </span>
                     </div>
+                    @unless (config('services.office_hub.embed_url'))
                     <div class="flex items-center gap-2">
                         <span class="text-[11px] text-slate-400 hidden sm:inline">Pekerja pahlawan sibuk bertugas:</span>
                         <div class="flex items-center gap-1.5">
@@ -510,8 +511,17 @@
                             </button>
                         </div>
                     </div>
+                    @endunless
                 </div>
 
+                @if (config('services.office_hub.embed_url'))
+                <!-- Bangunan live dari EA AI Office Hub (data masa nyata) -->
+                <div class="relative bg-slate-950 overflow-hidden" style="aspect-ratio: 1440 / 860;">
+                    <iframe src="{{ config('services.office_hub.embed_url') }}" title="KerjaAI Live Office"
+                            class="absolute inset-0 w-full h-full border-0" loading="lazy"
+                            referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+                </div>
+                @else
                 <!-- Canvas Wrapper -->
                 <div class="relative bg-slate-950 flex items-center justify-center p-1 sm:p-2 overflow-hidden select-none cursor-pointer group">
                     <canvas id="pixel-office-canvas" width="860" height="340" class="w-full h-auto max-w-full rounded-2xl block" style="image-rendering: pixelated; image-rendering: crisp-edges;"></canvas>
@@ -521,6 +531,7 @@
                         <span>💡 Klik mana-mana pekerja untuk lihat tugas semasa</span>
                     </div>
                 </div>
+                @endif
 
                 <!-- Status Ticker Bar Bawah -->
                 <div class="px-4 py-2.5 bg-slate-900/70 border-t border-white/5 flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
@@ -529,7 +540,7 @@
                         <span id="pixel-office-status" class="text-slate-200">Semua pahlawan bertugas aktif di pelayan tempatan anda.</span>
                     </div>
                     <div class="flex items-center gap-3 text-[10px] text-slate-500">
-                        <span>⚡ 60 FPS Engine</span>
+                        @if (config('services.office_hub.embed_url'))<span>🔴 Data langsung dari AI Office Hub</span>@else<span>⚡ 60 FPS Engine</span>@endif
                         <span>&bull;</span>
                         <span>0% Beban Server Luar</span>
                         <span>&bull;</span>

@@ -43,6 +43,7 @@ return [
     'office_hub' => [
         'url' => env('OFFICE_HUB_URL'),     // cth. http://100.95.241.63:8000 (IP Tailscale)
         'token' => env('OFFICE_HUB_TOKEN'), // device token eod_xxx
+        'embed_url' => env('OFFICE_HUB_EMBED_URL'), // cth. https://office.eadata.my/embed?key=xxx (laman awam)
     ],
 
     'ollama' => [
