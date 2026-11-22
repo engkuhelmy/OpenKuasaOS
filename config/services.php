@@ -39,6 +39,12 @@ return [
         'default_provider' => env('AI_DEFAULT_PROVIDER', 'ollama'),
     ],
 
+    // EA AI Office Hub (papar progress task live). Kosongkan untuk matikan.
+    'office_hub' => [
+        'url' => env('OFFICE_HUB_URL'),     // cth. http://100.95.241.63:8000 (IP Tailscale)
+        'token' => env('OFFICE_HUB_TOKEN'), // device token eod_xxx
+    ],
+
     'ollama' => [
         'url' => env('OLLAMA_BASE_URL', 'http://127.0.0.1:11434'),
         'model' => env('OLLAMA_MODEL', 'gemma4:e2b'),

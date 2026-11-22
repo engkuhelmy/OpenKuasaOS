@@ -399,9 +399,18 @@ PANDUAN FORMAT MAKLUM BALAS:
             ],
         ]);
 
+        // Office Hub: satu task = satu staff di office
+        $hub = app(\App\Services\OfficeHub\OfficeHubNotifier::class);
+        $taskId = substr((string) \Illuminate\Support\Str::uuid(), 0, 8);
+        $taskTitle = mb_strimwidth($prompt, 0, 80, '...');
+        $hub->started($taskId, $taskTitle, $contextModule, $orgId);
+
         // Zero-Token Scope Guardrail: Block exploit/cybersecurity/unrelated coding abuse
         $scopeViolation = $this->checkScopeViolation($prompt, $orgId, $user);
         if ($scopeViolation !== null) {
+            $hub->failed($taskId, $taskTitle, $contextModule, $orgId);
+            $hub->finished($taskId, $taskTitle, $contextModule, $orgId);
+
             $assistantMessage = ChatMessage::create([
                 'thread_id' => $thread->id,
                 'role' => 'assistant',
@@ -450,6 +459,8 @@ PANDUAN FORMAT MAKLUM BALAS:
             ->reverse()
             ->values();
 
+        $hub->working($taskId, $taskTitle, $contextModule, $orgId);
+
         // Strictly call only the chosen provider
         if ($config->provider === 'ollama') {
             $aiResponse = $this->callOllama($config, $prompt, $systemInstruction, $previousMessages);
@@ -485,6 +496,8 @@ PANDUAN FORMAT MAKLUM BALAS:
             'status' => 'completed',
             'tokens_used' => $tokensUsed,
         ]);
+
+        $hub->finished($taskId, $taskTitle, $contextModule, $orgId);
 
         return [
             'thread_id' => $thread->id,
